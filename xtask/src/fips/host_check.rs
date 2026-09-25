@@ -327,8 +327,8 @@ fn provider_entry(listing: &str, provider: &str) -> Option<(String, String)> {
 fn module_verdict(attestation: &mut Attestation, subject: &str, version: &str, require_certified: bool) {
     let verdict = certified::verdict(version);
     let line = verdict.describe(version);
-    attestation.fact(&format!("{subject}.module.certified"), verdict.certified());
-    if verdict.certified() {
+    attestation.fact(&format!("{subject}.module.certified"), verdict.validated());
+    if verdict.validated() {
         attestation.ok(&line);
     } else if require_certified {
         attestation.fail(&line);

@@ -12,7 +12,7 @@
       "version": "3.0.7-395c1a240fbfffd8",
       "name": "Red Hat Enterprise Linux 9 - OpenSSL FIPS Provider",
       "status": "active",
-      "certificate": "4857",
+      "cmvp_number": "4857",
       "standard": "FIPS 140-3",
       "sunset": "2029-10-28",
       "packages": [

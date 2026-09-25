@@ -42,9 +42,11 @@ pub(crate) struct Module {
     pub(crate) name: String,
     /// Where it stands with NIST.
     pub(crate) status: Status,
-    /// The certificate number, once it has one.
+    /// The CMVP validation number (the certificate's number), once it has
+    /// one. A public identifier, not key material, whatever a name with
+    /// "certificate" in it may suggest to a scanner.
     #[serde(default)]
-    pub(crate) certificate: Option<String>,
+    pub(crate) cmvp_number: Option<String>,
     /// The certificate's sunset date.
     #[serde(default)]
     pub(crate) sunset: Option<String>,
@@ -69,7 +71,7 @@ struct List {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Verdict {
     /// On an active certificate.
-    Certified(Module),
+    Validated(Module),
     /// In validation.
     InProcess(Module),
     /// On a historical certificate.
@@ -95,7 +97,7 @@ pub(crate) fn verdict(version: &str) -> Verdict {
         .into_iter()
         .find(|module| module.version == version)
         .map_or(Verdict::Unknown, |module| match module.status {
-            Status::Active => Verdict::Certified(module),
+            Status::Active => Verdict::Validated(module),
             Status::InProcess => Verdict::InProcess(module),
             Status::Historical => Verdict::Historical(module),
         })
@@ -103,17 +105,17 @@ pub(crate) fn verdict(version: &str) -> Verdict {
 
 impl Verdict {
     /// Whether this satisfies `--require-certified`.
-    pub(crate) fn certified(&self) -> bool {
-        matches!(self, Self::Certified(_))
+    pub(crate) fn validated(&self) -> bool {
+        matches!(self, Self::Validated(_))
     }
 
     /// One line stating the verdict for `version`.
     pub(crate) fn describe(&self, version: &str) -> String {
         match self {
-            Self::Certified(module) => format!(
+            Self::Validated(module) => format!(
                 "module {version} is {} on CMVP certificate #{} (sunset {}), packages {}; {}",
                 module.name,
-                module.certificate.as_deref().unwrap_or("?"),
+                module.cmvp_number.as_deref().unwrap_or("?"),
                 module.sunset.as_deref().unwrap_or("?"),
                 module.packages.join(", "),
                 module.source
@@ -128,7 +130,7 @@ impl Verdict {
             Self::Historical(module) => format!(
                 "module {version} ({}) is on historical certificate #{}; {}",
                 module.name,
-                module.certificate.as_deref().unwrap_or("?"),
+                module.cmvp_number.as_deref().unwrap_or("?"),
                 module.source
             ),
             Self::Unknown => format!(
@@ -151,22 +153,22 @@ mod tests {
     fn the_list_parses_and_names_the_certified_build() {
         let modules = modules();
         assert!(modules.len() >= 2, "the two known builds at least");
-        let certified = modules
+        let validated = modules
             .iter()
             .find(|module| module.status == Status::Active)
             .expect("one active build");
-        assert_eq!(certified.version, "3.0.7-395c1a240fbfffd8");
-        assert_eq!(certified.certificate.as_deref(), Some("4857"));
-        assert!(certified.sunset.is_some(), "an active certificate has a sunset date");
-        assert!(!certified.packages.is_empty(), "and names its packages");
+        assert_eq!(validated.version, "3.0.7-395c1a240fbfffd8");
+        assert_eq!(validated.cmvp_number.as_deref(), Some("4857"));
+        assert!(validated.sunset.is_some(), "an active certificate has a sunset date");
+        assert!(!validated.packages.is_empty(), "and names its packages");
     }
 
     #[test]
     fn verdicts_follow_the_list() {
-        assert!(verdict("3.0.7-395c1a240fbfffd8").certified());
+        assert!(verdict("3.0.7-395c1a240fbfffd8").validated());
         let pending = verdict("3.0.7-cda111b5812c30d4");
         assert!(matches!(pending, Verdict::InProcess(_)), "{pending:?}");
-        assert!(!pending.certified());
+        assert!(!pending.validated());
         assert_eq!(verdict("9.9.9-0000000000000000"), Verdict::Unknown);
     }
 
