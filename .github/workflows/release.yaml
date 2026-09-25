@@ -431,6 +431,8 @@ jobs:
           persist-credentials: false
           ref: ${{ github.ref_name }}
 
+      - uses: ./.github/actions/fips-runner-check
+
       - name: Pull the pushed FIPS image by digest and name it for the checks
         env:
           IMAGE: ghcr.io/${{ github.repository }}@${{ needs.container.outputs.fips-digest }}
