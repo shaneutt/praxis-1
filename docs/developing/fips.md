@@ -66,7 +66,12 @@ passes into the container. The container runs as the invoking user
 and the tests that boot the real server would fail for that reason alone.
 The cargo home and the target directory live in named volumes
 (`praxis-fips-host-cargo`, mounted with `:U` so it belongs to that user, and
-`praxis-fips-host-target`) so the second run is incremental.
+`praxis-fips-host-target`) so the second run is incremental. The run opens
+with `make fips-host-facts`, which prints what the process the suites run as
+actually sees (the kernel flag, the crypto policy, the providers OpenSSL
+loads, whether MD5 is refused) into the log next to the results, and fails
+right there when `PRAXIS_FIPS_HOST` is declared on a container that is not
+in FIPS mode.
 
 **The raw TLS probes.** `tests/utils/src/tls_probe.rs` builds `ClientHello`
 records that offer exactly what a test names (ChaCha20 only, X25519 only,
