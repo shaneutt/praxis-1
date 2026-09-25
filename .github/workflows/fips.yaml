@@ -17,8 +17,8 @@ name: FIPS
 # whole test suite runs as the FIPS build inside the UBI 9 toolchain image on
 # that host, and the image is run under PRAXIS_REQUIRE_FIPS=1 and probed from
 # outside. A self-hosted runner must never run a fork's code, so on pull
-# requests it runs only for same-repository branches a maintainer has labeled
-# `fips-host`; it runs on every push to main, nightly, and on dispatch.
+# requests it runs only for same-repository branches; it also runs on every
+# push to main, nightly, and on dispatch.
 #
 # Everything runs through the Makefile targets developers use locally (see
 # docs/developing/fips.md), with podman: Red Hat's image signatures can only
@@ -32,18 +32,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    # `labeled` so adding the fips-host label starts the runner job.
-    types: [opened, synchronize, reopened, labeled]
   schedule:
     # Nightly runtime proof; clear of the other nightly schedules.
     - cron: "41 3 * * *"
   workflow_dispatch:
 
-# Label events get a group of their own: they run alongside the push's run
-# rather than replacing it, so a label that has nothing to do with the FIPS
-# runner cannot cancel the checks that matter.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.action == 'labeled' && '-labeled' || '' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions: {}
@@ -54,11 +49,6 @@ jobs:
   # ----------------------------------------------------------------------------
 
   ubi-image:
-    # A label event re-runs the workflow; only the fips-host label is worth it.
-    if: >-
-      github.event_name != 'pull_request'
-      || github.event.action != 'labeled'
-      || github.event.label.name == 'fips-host'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -143,13 +133,11 @@ jobs:
   fips-host:
     needs: ubi-image
     # Never a fork's code on the self-hosted runner: pull requests only from
-    # this repository's own branches, and only once a maintainer has labeled
-    # them fips-host.
+    # this repository's own branches.
     if: >-
       needs.ubi-image.result == 'success'
       && (github.event_name != 'pull_request'
-          || (github.event.pull_request.head.repo.full_name == github.repository
-              && contains(github.event.pull_request.labels.*.name, 'fips-host')))
+          || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, fips, rhel]
     # One runner: queue behind any other run rather than share it.
     concurrency:

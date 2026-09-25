@@ -131,7 +131,8 @@ Two kinds of check, and both matter. The static checks prove what is in the
 image and run anywhere; the runtime checks prove what the image does in FIPS
 mode and need a FIPS host. CI runs both: the static checks on every pull
 request, the runtime checks on a RHEL 9 runner in FIPS mode for every push
-to main, nightly, on request for a labeled pull request, and against the
+to main, nightly, for every pull request from a branch of this repository, and
+against the
 pushed `-fips` image before a release is drafted (the `FIPS` workflow and
 the release workflow's `fips-host` job).
 

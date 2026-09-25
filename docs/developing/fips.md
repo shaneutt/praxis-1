@@ -120,8 +120,7 @@ job saves the image as an artifact with its id (`make fips-image-save`), and
 the runner loads it and checks the id against the one the hosted job
 recorded (`make fips-image-load`). A self-hosted runner must never run a
 fork's code, so on pull requests the job runs only for branches of this
-repository that a maintainer has labeled `fips-host`; it runs on every push
-to main, nightly, and on dispatch. The release workflow's `fips-host` job
+repository; it runs on every push to main, nightly, and on dispatch. The release workflow's `fips-host` job
 pulls the pushed `-fips` image by digest, attests and probes it (without
 repeating the suites), and the draft release waits for it.
 
